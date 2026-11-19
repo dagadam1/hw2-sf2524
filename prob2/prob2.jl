@@ -29,4 +29,3 @@ Q, H, z, x_GMRES = arnoldi_GRMS(A, b, 100, double_GS_MV)
 
 residual_GMRES = norm(A .* x - b)
 
-
