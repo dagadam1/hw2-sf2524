@@ -22,6 +22,7 @@ function arnoldi_GRMS(A, b, m, gs_func)
   Q[:, 1]=b/norm(b);
   z_✶ = [];
   x̃ = [];
+  xₘ = [];
 
   t0=0;
   t1=0;
@@ -38,8 +39,8 @@ function arnoldi_GRMS(A, b, m, gs_func)
     ### normalize
     Q[:, k+1].=worth/beta;
     # Least squares
-    z_✶.push((H[1:(k+1), k]' * H[1:(k+1), k]) \ e₁norm_b)
-    xₘ.push(Q[:, k+1] * z_✶[end]);
+    push!(z_✶, ((H[1:k, k]' * H[1:k, k]) \ e₁norm_b[1:k]))
+    push!(xₘ, Q[:, 1:k] * z_✶[end])
   end
   return (Q, H, z_✶, xₘ)
 end

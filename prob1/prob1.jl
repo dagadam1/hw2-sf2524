@@ -5,19 +5,28 @@ Random.seed!(0)
 α_list = (1, 5, 10, 100)
 n = 100
 
-for α in α_list
-  A, b = generate_A_b(α)
-  (Q, H, z_✶, xₘ) = arnoldi_GRMS(A, b, 100, double_GS_MV)
-
-  plot(1:100, norm(), yscale=:log10, label="||Ax - b||/||b||")
-  savefig("gmres_alpha=$α")
-end
-
 function generate_A_b(α)
-  A = sprand(n, n, 0.5)
+  A = sprand(ComplexF64, n, n, 0.5)
   A = A + α*I
   A = A/norm(A, 1);
-  b = randn(n);
+  b = randn(ComplexF64, n);
   return (A, b)
 end
+
+for α in α_list
+  A, b = generate_A_b(α)
+  real_x = A\b;
+  iter = 100
+  (Q, H, z_✶, xₘ) = arnoldi_GRMS(A, b, iter, double_GS_MV)
+
+  # x̃ = [Q[1:m, 1:m] * z_✶[m] for m in 1:iter]
+
+  plot(1:iter, [norm(xm - real_x)/norm(real_x) for xm in xₘ], yscale=:log10, label="||x_* - x_m||/||x_*||")
+  savefig("gmres_rel_error_alpha=$α")
+
+  plot(1:iter, [A * xm - b for xm in xₘ], yscale=:log10, label="||Ax_m - b||/||b||")
+  savefig("gmres_rel_res_alpha=$α")
+end
+
+
 
