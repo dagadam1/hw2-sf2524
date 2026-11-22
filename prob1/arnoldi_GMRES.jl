@@ -21,7 +21,15 @@ function arnoldi_GMRES(A, b, m, gs_func)
   H=ComplexF64.(zeros(m+1, m));
   Q[:, 1]=b/norm(b);
   z_✶ = [];
+<<<<<<< Updated upstream
   xₘ = [];
+=======
+  x̃ = [];
+  xₘ = [];
+
+  t0=0;
+  t1=0;
+>>>>>>> Stashed changes
 
   for k=1:m
     w=A*Q[:, k]; # Matrix-vector product 
@@ -35,7 +43,11 @@ function arnoldi_GMRES(A, b, m, gs_func)
     ### normalize
     Q[:, k+1].=worth/beta;
     # Least squares
+<<<<<<< Updated upstream
     push!(z_✶, (H[1:(k+1), 1:k]' * H[1:(k+1), 1:k]) \ (H[1:(k+1), 1:k]' * e₁norm_b[1:(k+1)]))
+=======
+    push!(z_✶, ((H[1:k, k]' * H[1:k, k]) \ e₁norm_b[1:k]))
+>>>>>>> Stashed changes
     push!(xₘ, Q[:, 1:k] * z_✶[end])
   end
   return (Q, H, z_✶, xₘ)

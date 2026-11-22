@@ -15,17 +15,53 @@ b = kron(ones(div(n,2)), [0;1]) + ones(n);
 
 # Conjugate Gradient
 x_CG, residual_CG = CG(A, b)
-
 k = 1:length(residual_CG) 
 p = scatter(k, residual_CG,
     yscale=:log10,
-    label=CG,
+    label="Method 1: CG",
+    marker=:star5,
+    markercolor=:black,
     title="Residual norms",
     xlabel= L"iteration $p$",
     ylabel = L"\Vert Ax - b \Vert_2")
 
 # Generalized Minimum Residual method
-Q, H, z, x_GMRES = arnoldi_GRMS(A, b, 100, double_GS_MV)
+Q, H, z_GMRES, x_GMRES = arnoldi_GMRES(A, b, 100, double_GS_MV);
 
-residual_GMRES = norm(A .* x - b)
+residual_GMRES = zeros(length(x_GMRES))
+
+for i in 1:length(x_GMRES)
+    residual_GMRES[i] = norm(A * x_GMRES[i] - b)
+end
+
+residual_GMRES = filter(x -> x > 1e-14, residual_GMRES);
+
+scatter!(p, k, residual_GMRES,
+        label="Method 2: GMRES",
+        marker=:x,
+        markersize=3,
+        markercolor=:blue)
+
+
+# Conjugate Gradient with least sqaures
+X_ls = zeros(n, length(x_CG))
+for i in 1:length(x_CG)
+    X_ls[:, i] = x_CG[i] 
+end
+residual_CG_ls = []
+
+for p in 1:length(x_CG)
+    Xp = X_ls[:, 1:p]
+    M = A * Xp
+    local z = (M' * M) \ (M' *  b)
+    x  = Xp * z
+    push!(residual_CG_ls, norm(A * x - b))
+end
+
+scatter!(p, k, residual_CG_ls,
+        label="Method 3: CG with LSQ",
+        marker=:cross,
+        markercolor=:red)
+
+display(p)
 
