@@ -64,4 +64,12 @@ scatter!(p, k, residual_CG_ls,
         markercolor=:red)
 
 display(p)
+savefig("prob2/prob2_residual_norms")
 
+scatter!(p;
+        yscale = :identity,      
+        xlims  = (1.5, 2.5),
+        ylims  = (0.1528, 0.1532),
+        title  = "Residual norms (zoom)")
+
+savefig("prob2/residual_norm_zoomed")
