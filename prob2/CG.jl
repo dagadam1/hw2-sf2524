@@ -1,7 +1,7 @@
 using LinearAlgebra
 
 
-function CG(A, b)
+function CG(A, b, N)
     n = size(A, 1)
     x = zeros(n)
     r = b
@@ -11,7 +11,7 @@ function CG(A, b)
     residual_norms = []
     tol = 1e-140
 
-    for m in 1:24
+    for m in 1:N
         alpha_m = (r' * r) / (p' * A * p)
         x_m = x + alpha_m * p
         r_m = r - alpha_m * A * p
