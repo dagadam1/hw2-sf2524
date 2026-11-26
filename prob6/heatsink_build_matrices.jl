@@ -126,12 +126,13 @@ D = spdiagm(0 => diag(A))
 include("GMRES.jl")
 include("pcg.jl")
 
-error(A, x, b) = [norm(A * x - b)/norm(b) for x in x]
+error_res_single(A, x, b) = norm(A * x - b)/norm(b)
+error_res(A, x, b) = [error_res_single(A, x, b) for x in x]
 
 m = 100
 
 plot(1:m,
-  error(A, GMRES_single_precond(A, rhs, m, double_GS_MV, D)[2], rhs),
+  error_res(A, GMRES_single_precond(A, rhs, m, double_GS_MV, D)[2], rhs),
   xlabel="Iteration",
   ylabel=L"$|| A x_m - b ||_2 / ||b||$",
   label="GMRES with precond D",
@@ -144,7 +145,7 @@ plot(1:m,
 )
 
 plot!(1:m,
-  error(A, GMRES_factor_precond(A, rhs, m, double_GS_MV, T₁, T₂)[2], rhs),
+  error_res(A, GMRES_factor_precond(A, rhs, m, double_GS_MV, T₁, T₂)[2], rhs),
   label="GMRES with precond M",
   yscale=:log10,
   linecolor=:red,
@@ -168,3 +169,27 @@ plot!(1:m,
 )
 
 savefig("plot")
+
+for m ∈ (50, 100)
+  A \ rhs
+  backslash = [(@elapsed(x = A \ rhs), error_res_single(A, x, rhs)) for _ in 1:10]
+  GMRES_single_precond(A, rhs, m, double_GS_MV, D)
+  GMRES_D = [(@elapsed(x = GMRES_single_precond(A, rhs, m, double_GS_MV, D)[2][end]), error_res_single(A, x, rhs)) for _ in 1:10]
+  GMRES_factor_precond(A, rhs, m, double_GS_MV, T₁, T₂)
+  GMRES_M = [(@elapsed(x = GMRES_factor_precond(A, rhs, m, double_GS_MV, T₁, T₂)[2][end]), error_res_single(A, x, rhs)) for _ in 1:10]
+  pcg_v1(A, rhs, m, D, compute_residual=true)
+  PCG_D = [(@elapsed(res = pcg_v1(A, rhs, m, D, compute_residual=true)[2]), res[end]) for _ in 1:10]
+  pcg_v2(A, rhs, m, T₁, T₂, compute_residual=true)
+  PCG_M = [(@elapsed(res = pcg_v2(A, rhs, m, T₁, T₂, compute_residual=true)[2]), res[end]) for _ in 1:10]
+
+  # (time, error)
+  @show m
+  println("backslash: mean time=$(mean(first.(backslash))), mean error=$(mean(last.(backslash)))")
+  println("GMRES_D: mean time=$(mean(first.(GMRES_D))), mean error=$(mean(last.(GMRES_D)))")
+  println("GMRES_M: mean time=$(mean(first.(GMRES_M))), mean error=$(mean(last.(GMRES_M)))")
+  println("PCG_D: mean time=$(mean(first.(PCG_D))), mean error=$(mean(last.(PCG_D)))")
+  println("PCG_M: mean time=$(mean(first.(PCG_M))), mean error=$(mean(last.(PCG_M)))")
+end
+savefig("table")
+
+
