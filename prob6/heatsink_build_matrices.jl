@@ -3,6 +3,8 @@ using LinearAlgebra
 using Random
 using Statistics
 using SparseArrays
+using LaTeXStrings
+using Plots
 
 Random.seed!(0)
 
@@ -84,25 +86,25 @@ T₂ = precond["T2"]
 
 D = spdiagm(0 => diag(A))
 
-norms_T1T2 = []
-times_T1T2 = []
-norms_D = []
-times_D = []
+# norms_T1T2 = []
+# times_T1T2 = []
+# norms_D = []
+# times_D = []
 #
 # warmup
-_ = randn(size(A)[2])
-_ = norm(T₂\(T₁\(A*z))-z) / norm(A*z)
-_ = norm(D\(A*z) - z)/norm(A*z)
-
-for _ ∈ 1:10
-  z = randn(size(A)[2])
-  time_T1T2 = @elapsed(n_T1T2 = norm(T₂\(T₁\(A*z))-z) / norm(A*z))
-  push!(norms_T1T2, n_T1T2)
-  push!(times_T1T2, time_T1T2)
-  time_D = @elapsed(n_D = norm(D\(A*z) - z)/norm(A*z))
-  push!(norms_D, n_D)
-  push!(times_D, time_D)
-end
+# z = randn(size(A)[2])
+# _ = norm(T₂\(T₁\(A*z))-z) / norm(A*z)
+# _ = norm(D\(A*z) - z)/norm(A*z)
+#
+# for _ ∈ 1:10
+#   z = randn(size(A)[2])
+#   time_T1T2 = @elapsed(n_T1T2 = norm(T₂\(T₁\(A*z))-z) / norm(A*z))
+#   push!(norms_T1T2, n_T1T2)
+#   push!(times_T1T2, time_T1T2)
+#   time_D = @elapsed(n_D = norm(D\(A*z) - z)/norm(A*z))
+#   push!(norms_D, n_D)
+#   push!(times_D, time_D)
+# end
 
 # println(norms_T1T2)
 # println(times_T1T2)
@@ -110,13 +112,59 @@ end
 # println(times_D)
 # println(mean(times_D))
 
-@show mean(norms_T1T2)
-@show mean(times_T1T2)
-@show mean(norms_D)
-@show mean(times_D)
+# @show mean(norms_T1T2)
+# @show mean(times_T1T2)
+# @show mean(norms_D)
+# @show mean(times_D)
+#
+# @show std(norms_T1T2)
+# @show std(times_T1T2)
+# @show std(norms_D)
+# @show std(times_D)
 
-@show std(norms_T1T2)
-@show std(times_T1T2)
-@show std(norms_D)
-@show std(times_D)
 
+include("GMRES.jl")
+include("pcg.jl")
+
+error(A, x, b) = [norm(A * x - b)/norm(b) for x in x]
+
+m = 100
+
+plot(1:m,
+  error(A, GMRES_single_precond(A, rhs, m, double_GS_MV, D)[2], rhs),
+  xlabel="Iteration",
+  ylabel=L"$|| A x_m - b ||_2 / ||b||$",
+  label="GMRES with precond D",
+  xlims=(0, 100),
+  ylims=(1e-14, 1e1),
+  yscale=:log10,
+  linestyle=:dash,
+  linecolor=:black,
+  legend=:bottomleft,
+)
+
+plot!(1:m,
+  error(A, GMRES_factor_precond(A, rhs, m, double_GS_MV, T₁, T₂)[2], rhs),
+  label="GMRES with precond M",
+  yscale=:log10,
+  linecolor=:red,
+  linestyle=:solid,
+)
+
+plot!(1:m,
+  pcg_v1(A, rhs, m, D, compute_residual=true)[2],
+  label="PCG with precond D",
+  yscale=:log10,
+  linecolor=:blue,
+  linestyle=:dashdot,
+)
+
+plot!(1:m,
+  pcg_v2(A, rhs, m, T₁, T₂, compute_residual=true)[2],
+  label="PCG with precond M",
+  yscale=:log10,
+  linecolor=:green,
+  linestyle=:solid,
+)
+
+savefig("plot")
