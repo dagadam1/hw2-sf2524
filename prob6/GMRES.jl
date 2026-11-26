@@ -2,11 +2,12 @@ using LinearAlgebra
 function GMRES_factor_precond(A, b, m, gs_func, T₁, T₂)
   hw1_good_gs = gs_func;
   n=length(b);
+  b̂ = T₂ \ (T₁ \ b)
   e₁norm_b = zeros(n+1);
-  e₁norm_b[1] = norm(b);
+  e₁norm_b[1] = norm(b̂);
   Q=ComplexF64.(zeros(n, m+1));
   H=ComplexF64.(zeros(m+1, m));
-  Q[:, 1]=b/norm(b);
+  Q[:, 1]=b̂/norm(b̂);
   z_✶ = [];
   xₘ = [];
 
@@ -23,7 +24,7 @@ function GMRES_factor_precond(A, b, m, gs_func, T₁, T₂)
     Q[:, k+1].=worth/beta;
     # Least squares
     push!(z_✶, (H[1:(k+1), 1:k]' * H[1:(k+1), 1:k]) \ (H[1:(k+1), 1:k]' * e₁norm_b[1:(k+1)]))
-    push!(xₘ, T₁ * (T₂ * (Q[:, 1:k] * z_✶[end])))
+    push!(xₘ, Q[:, 1:k] * z_✶[end])
   end
   return (z_✶, xₘ)
 end
@@ -31,11 +32,12 @@ end
 function GMRES_single_precond(A, b, m, gs_func, M)
   hw1_good_gs = gs_func;
   n=length(b);
+  b̂ = M \ b;
   e₁norm_b = zeros(n+1);
-  e₁norm_b[1] = norm(b);
+  e₁norm_b[1] = norm(b̂);
   Q=ComplexF64.(zeros(n, m+1));
   H=ComplexF64.(zeros(m+1, m));
-  Q[:, 1]=b/norm(b);
+  Q[:, 1]=b̂/norm(b̂);
   z_✶ = [];
   xₘ = [];
 
@@ -52,7 +54,7 @@ function GMRES_single_precond(A, b, m, gs_func, M)
     Q[:, k+1].=worth/beta;
     # Least squares
     push!(z_✶, (H[1:(k+1), 1:k]' * H[1:(k+1), 1:k]) \ (H[1:(k+1), 1:k]' * e₁norm_b[1:(k+1)]))
-    push!(xₘ, M * (Q[:, 1:k] * z_✶[end]))
+    push!(xₘ, Q[:, 1:k] * z_✶[end])
   end
   return (z_✶, xₘ)
 end
