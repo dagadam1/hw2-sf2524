@@ -2,6 +2,9 @@ using MAT
 using LinearAlgebra
 using Random
 using Statistics
+using SparseArrays
+
+Random.seed!(0)
 
 # --- Load data ---
 data = matread("heatsink_exercise_ref1.mat")
@@ -52,28 +55,68 @@ rhs = Ff - Kfc * T[fixed]
 # Solve
 # x = A \ rhs
 
-# vector mult test (part b)
-times = []
-for i in 1:10
-  test_b = randn(size(A)[2])
-  push!(times, @elapsed(A * test_b))
+# # vector mult test (part b)
+# times = []
+# for i in 1:10
+#   test_b = randn(size(A)[2])
+#   push!(times, @elapsed(A * test_b))
+# end
+#
+# println(times)
+# println(mean(times))
+# println(std(times))
+#
+# # backslash time test (part d)
+# A \ rhs # warmup
+# backslash_times = [@elapsed(A \ rhs) for _ in 1:10]
+#
+# println("BACKSLASH")
+# println(backslash_times)
+# println(mean(backslash_times))
+# println(std(backslash_times))
+
+
+
+# precond test (part e)
+precond = matread("heatsink_precond_ref1.mat")
+T₁ = precond["T1"]
+T₂ = precond["T2"]
+
+D = spdiagm(0 => diag(A))
+
+norms_T1T2 = []
+times_T1T2 = []
+norms_D = []
+times_D = []
+#
+# warmup
+_ = randn(size(A)[2])
+_ = norm(T₂\(T₁\(A*z))-z) / norm(A*z)
+_ = norm(D\(A*z) - z)/norm(A*z)
+
+for _ ∈ 1:10
+  z = randn(size(A)[2])
+  time_T1T2 = @elapsed(n_T1T2 = norm(T₂\(T₁\(A*z))-z) / norm(A*z))
+  push!(norms_T1T2, n_T1T2)
+  push!(times_T1T2, time_T1T2)
+  time_D = @elapsed(n_D = norm(D\(A*z) - z)/norm(A*z))
+  push!(norms_D, n_D)
+  push!(times_D, time_D)
 end
 
-println(times)
-println(mean(times))
-println(std(times))
+# println(norms_T1T2)
+# println(times_T1T2)
+# println(norms_D)
+# println(times_D)
+# println(mean(times_D))
 
-# backslash time test (part d)
-backslash_times = []
-A \ rhs # warmup
-for i in 1:10
-  push!(backslash_times, @elapsed(A \ rhs))
-end
+@show mean(norms_T1T2)
+@show mean(times_T1T2)
+@show mean(norms_D)
+@show mean(times_D)
 
-println("BACKSLASH")
-println(backslash_times)
-println(mean(backslash_times))
-println(std(backslash_times))
-
-
+@show std(norms_T1T2)
+@show std(times_T1T2)
+@show std(norms_D)
+@show std(times_D)
 
