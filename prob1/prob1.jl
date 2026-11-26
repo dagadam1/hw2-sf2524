@@ -3,10 +3,9 @@ include("arnoldi_GMRES.jl")
 
 Random.seed!(0)
 α_list = (1, 5, 10, 100)
-n = 100
 iter = 100
 
-function generate_A_b(α)
+function generate_A_b(α, n=100)
   A = sprand(n, n, 0.5)
   A = A + α*I
   A = A/opnorm(A, 1);
@@ -19,12 +18,11 @@ circle_plot(r, x0, y0) = x0 .+ r .* cos.(θ), y0 .+ r .* sin.(θ)
 
 single_outlier_bound(V, λ₁, m, r, x0, y0) = cond(V) * (abs(λ₁ - x0 - y0*im) + r) * abs(x0 + y0*im) / (abs(λ₁) * r) * (r/abs(x0 + y0*im)) .^ m
 
+# part a and b
 for α in α_list
   A, b = generate_A_b(α)
   real_x = A\b
   (Q, H, z_✶, xₘ) = arnoldi_GMRES(A, b, iter, double_GS_MV)
-
-  # x̃ = [Q[1:m, 1:m] * z_✶[m] for m in 1:iter]
 
   # Localization disk. Obtained by obeservation of plots
   circle = if α == 1
@@ -106,4 +104,26 @@ for α in α_list
   plot!(circle_plot(circle...)..., color=:red, label="Localization disk")
 
   savefig("eigvals_alpha=$α",)
+end
+
+# part c
+resnorm(A, x, b) = norm(A*x - b)/norm(b)
+for α in (1, 100)
+  for n in (200, 500, 1000)
+    A, b = generate_A_b(α, n)
+    for m in (5, 10, 20, 50, 100)
+      println("GMRES α=$α, n=$n, m=$m")
+      (Q, H, z_✶, xₘ) = arnoldi_GMRES(A, b, m, double_GS_MV)
+      println(@elapsed begin
+        (Q, H, z_✶, xₘ) = arnoldi_GMRES(A, b, m, double_GS_MV)
+      end)
+      println("GMRES resnorm=$(resnorm(A, xₘ[end], b))")
+    end
+    println("Backslash α=$α, n=$n")
+    x = A \ b
+    println(@elapsed begin
+      x = A \ b
+    end)
+    println("backslash resnorm=$(resnorm(A, x, b))")
+  end
 end
