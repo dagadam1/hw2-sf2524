@@ -1,23 +1,25 @@
 using MAT
 using LinearAlgebra
+using Random
+using Statistics
 
 # --- Load data ---
 data = matread("heatsink_exercise_ref1.mat")
 
-K         = data["K"]          # full stiffness
-F0        = data["F"]          # base load vector (without Gaussian)
-coords    = data["coords"]     # N x 3
-tri       = convert.(Int64,data["tri"])        # M x 3
-baseNodes = convert.(Int64,data["baseNodes"])  # indices of base nodes (y ≈ ymin)
-topNodes  = convert.(Int64,data["topNodes"])   # indices of top nodes  (y ≈ ymax)
+K = data["K"]          # full stiffness
+F0 = data["F"]          # base load vector (without Gaussian)
+coords = data["coords"]     # N x 3
+tri = convert.(Int64, data["tri"])        # M x 3
+baseNodes = convert.(Int64, data["baseNodes"])  # indices of base nodes (y ≈ ymin)
+topNodes = convert.(Int64, data["topNodes"])   # indices of top nodes  (y ≈ ymax)
 
 N = size(coords, 1)
 
 # --- Parameters for Gaussian base temperature ---
 
-Tinf     = 293.15   # K, ambient
-T0       = 363.15   # K, peak at center (e.g. 90°C)
-sigma    = 0.03     # m, Gaussian width
+Tinf = 293.15   # K, ambient
+T0 = 363.15   # K, peak at center (e.g. 90°C)
+sigma = 0.03     # m, Gaussian width
 x_center = 0.0      # m
 z_center = 0.0      # m
 
@@ -26,8 +28,8 @@ x_base = coords[baseNodes, 1]
 z_base = coords[baseNodes, 3]
 
 # Gaussian temperature profile at base
-dx2 = (x_base .- x_center).^2
-dz2 = (z_base .- z_center).^2
+dx2 = (x_base .- x_center) .^ 2
+dz2 = (z_base .- z_center) .^ 2
 Tbase = Tinf .+ (T0 - Tinf) .* exp.(-(dx2 .+ dz2) ./ (2 * sigma^2))
 
 # --- Build Dirichlet-constrained system and solve ---
@@ -41,11 +43,37 @@ fixed[baseNodes] .= true
 free = .!fixed
 
 # Reduced system: A * Tfree = Ff - Kfc * Tfixed
-A   = K[free, free]
+A = K[free, free]
 Kfc = K[free, fixed]
-Ff  = F0[free]
+Ff = F0[free]
 
 rhs = Ff - Kfc * T[fixed]
 
 # Solve
-x = A \ rhs
+# x = A \ rhs
+
+# vector mult test (part b)
+times = []
+for i in 1:10
+  test_b = randn(size(A)[2])
+  push!(times, @elapsed(A * test_b))
+end
+
+println(times)
+println(mean(times))
+println(std(times))
+
+# backslash time test (part d)
+backslash_times = []
+A \ rhs # warmup
+for i in 1:10
+  push!(backslash_times, @elapsed(A \ rhs))
+end
+
+println("BACKSLASH")
+println(backslash_times)
+println(mean(backslash_times))
+println(std(backslash_times))
+
+
+
